@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling>=1.33.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "anime-core-lib-portrait-tool"
+version = "0.1.0"
+description = "Automatic and manual portrait composition and DDS export for Anime Core Lib"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "cwlm"}]
+dependencies = ["Pillow>=13.0.0"]
+
+[project.optional-dependencies]
+auto = ["dghs-imgutils>=0.19.0", "onnxruntime>=1.31.1"]
+gpu = ["dghs-imgutils>=0.19.0", "onnxruntime-gpu>=1.31.1"]
+gui = ["PySide6-Essentials>=6.12.0"]
+
+[project.scripts]
+portrait = "anime_core_lib_portrait_tool.cli:main"
+portrait-batch = "anime_core_lib_portrait_tool.cli:batch_main"
+
+[project.urls]
+Repository = "https://github.com/cwlm/anime_core_lib_portrait_tool"
+
+[tool.hatch.build.targets.wheel]
+packages = ["anime_core_lib_portrait_tool"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/anime_core_lib_portrait_tool", "/tests", "/examples", "/portrait.py", "/batch.py", "/pyproject.toml", "/README.md", "/LICENSE"]
