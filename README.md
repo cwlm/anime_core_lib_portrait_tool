@@ -1,6 +1,6 @@
 # 透明立绘转 DDS
 
-单图自动／手动处理工具，CSV 批处理作为独立示例放在 examples/。输出固定为 1024×1024、直通 Alpha、单层 BC3／DXT5 DDS。
+单图自动／手动处理工具，CSV 批处理作为独立示例放在 examples/。默认输出 1024×1024（可配置）、直通 Alpha、单层 BC3／DXT5 DDS。
 
 ## 安装
 
@@ -28,7 +28,7 @@ portrait auto --input source.png --output result.dds --encoder nvtt --encoder-pa
 portrait manual --input source.png --output result.dds --encoder texconv --encoder-path 'C:/Tools/texconv.exe'
 ```
 
-手动窗口：左键拖动，滚轮缩放，点击保存或 Ctrl+S 导出；取消不写文件。保存失败可以重试。默认禁止覆盖，--overwrite 允许覆盖。
+手动窗口：左键拖动／滚轮调整图片；Ctrl+滚轮缩放查看，中键或右键平移视图。“查看完整画布”重置视图，查看操作不改变输出构图。右侧可以输入缩放百分比及左上角 X／Y，“立绘居中”重置排版。白框是输出画布，橙框是脸部参考，青框是原图边界，紫框是可见内容边界；辅助框不写入 DDS。点击保存或 Ctrl+S 导出，取消不写文件；默认禁止覆盖，--overwrite 允许覆盖。
 
 命令行默认离线。--model-cache 指定 Hugging Face 缓存；需要下载模型时自行设置 HF_HUB_OFFLINE=0。
 
@@ -50,6 +50,18 @@ images/source.png,output/result.dds
 路径相对 CSV 所在目录；CSV 使用 UTF-8，可带 BOM。先运行全部自动任务，再依次手动处理没有可靠主脸的图片。自动判定包括无脸、低分、大小相近的多脸和空透明图。文件读取、模型运行或编码异常会打印错误并继续其他任务，不打开手动窗口。
 
 已有输出默认跳过；重跑会重新尝试没有输出的任务。取消手动窗口会停止人工队列。单图退出码为 0 已保存、2 需手动或取消、1 错误；批处理示例为 0 完成、1 有错误或取消。
+
+## 画布与构图配置
+
+默认画布为 1024×1024。自动和手动入口都支持 --layout，使用同一套画布、脸部参考及活动范围。配置示例见 examples/layout.json：
+
+```powershell
+portrait manual --input source.png --output result.dds --encoder nvtt --encoder-path 'C:/Tools/nvtt_export.exe' --layout examples/layout.json
+```
+
+修改 canvas 时，一并设置 anchor、face_size、anchor_x 和 anchor_y；坐标单位均为输出像素。margin 是内容边距，alpha_core 和 face_threshold 分别控制自动取景的 Alpha 阈值与主脸置信度。
+
+Python 接口使用 load_layout(path) 或 Layout(...)；将 layout 传给 prepare、estimate_transform 和 render 即可。批处理示例已共用 examples/layout.json。
 
 ## Python 接口
 

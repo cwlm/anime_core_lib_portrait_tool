@@ -6,9 +6,10 @@ import sys
 
 sys.path.insert(0, r"E:\Modding\anime_core_lib_portrait_tool")
 from anime_core_lib_portrait_tool.auto import prepare as automatic
+from anime_core_lib_portrait_tool import load_layout
 
 CSV = Path(r"E:\Modding\anime_core_lib_portrait_tool\examples\jobs.csv")
-OPTIONS = dict(encoder="nvtt",
+OPTIONS = dict(layout=load_layout(CSV.with_name("layout.json")), encoder="nvtt",
                encoder_path=r"C:\Program Files\NVIDIA Corporation\NVIDIA Texture Tools\nvtt_export.exe")
 
 

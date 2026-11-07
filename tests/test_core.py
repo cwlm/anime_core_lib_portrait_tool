@@ -11,7 +11,7 @@ from PySide6.QtCore import QPoint, QPointF, Qt, QTimer
 from PySide6.QtGui import QWheelEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QDialog
-from anime_core_lib_portrait_tool import Placement, read_image, render, estimate_transform, write_dds
+from anime_core_lib_portrait_tool import Placement, read_image, render, estimate_transform, write_dds, Layout, load_layout
 from anime_core_lib_portrait_tool import auto, manual
 from examples import batch
 
@@ -143,6 +143,63 @@ class CoreTests(unittest.TestCase):
             self.assertFalse(editor.saved)
             editor.save()
             self.assertTrue(editor.saved)
+
+
+    def test_custom_layout_reaches_automatic_and_manual_output(self):
+        from dataclasses import asdict
+        import json
+        layout = Layout(canvas=(640,360),anchor=(320,80),face_size=(40,40),
+                        anchor_x=(250,390),anchor_y=(60,120),margin=4)
+        path = self.root/"layout.json"
+        path.write_text(json.dumps(asdict(layout)),encoding="utf-8")
+        self.assertEqual(load_layout(path),layout)
+        with patch("anime_core_lib_portrait_tool.transform.detect_faces",return_value=[([80,30,120,70],"face",0.95)]), patch.object(auto,"write_dds") as encode:
+            self.assertTrue(auto.prepare(self.source,self.output,layout=layout,**self.options))
+            self.assertEqual(encode.call_args.args[1].size,layout.canvas)
+        editor = manual.PortraitEditor(self.image,self.output,layout=layout,**self.options)
+        self.addCleanup(editor.close)
+        with patch.object(manual,"write_dds") as encode:
+            editor.save()
+            self.assertEqual(encode.call_args.args[1].size,layout.canvas)
+
+    def test_view_zoom_and_pan_do_not_change_composition(self):
+        view = manual.PortraitView(self.image)
+        view.resize(700,700)
+        view.show()
+        self.addCleanup(view.close)
+        self.app.processEvents()
+        placement = view.placement()
+        point = QPoint(300,300)
+        old_zoom = view.transform().m11()
+        event = QWheelEvent(QPointF(point),QPointF(point),QPoint(),QPoint(0,120),
+                            Qt.MouseButton.NoButton,Qt.KeyboardModifier.ControlModifier,
+                            Qt.ScrollPhase.NoScrollPhase,False)
+        view.wheelEvent(event)
+        self.assertGreater(view.transform().m11(),old_zoom)
+        origin = view.mapToScene(point)
+        QTest.mousePress(view.viewport(),Qt.MouseButton.MiddleButton,pos=point)
+        QTest.mouseMove(view.viewport(),point+QPoint(30,20))
+        QTest.mouseRelease(view.viewport(),Qt.MouseButton.MiddleButton,pos=point+QPoint(30,20))
+        self.assertNotEqual(view.mapToScene(point),origin)
+        self.assertEqual(view.placement(),placement)
+        view.fit_view()
+        self.assertEqual(view.placement(),placement)
+
+    def test_numeric_fields_sync_without_exporting(self):
+        editor = manual.PortraitEditor(self.image,self.output,**self.options)
+        self.addCleanup(editor.close)
+        editor.show()
+        self.app.processEvents()
+        with patch.object(manual,"write_dds") as encode:
+            editor.scale_box.setValue(150)
+            editor.x_box.setValue(-20)
+            editor.y_box.setValue(30)
+            self.assertEqual(editor.view.placement(),Placement(1.5,-20,30))
+            editor.view.set_placement(Placement(2,15,-7))
+            self.assertEqual((editor.scale_box.value(),editor.x_box.value(),editor.y_box.value()),(200,15,-7))
+            QTest.keyClick(editor.x_box,Qt.Key.Key_Return)
+            self.assertFalse(editor.saved)
+            encode.assert_not_called()
 
 
 if __name__ == "__main__":
