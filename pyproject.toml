@@ -28,4 +28,4 @@ Repository = "https://github.com/cwlm/anime_core_lib_portrait_tool"
 packages = ["anime_core_lib_portrait_tool"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/anime_core_lib_portrait_tool", "/tests", "/examples", "/portrait.py", "/pyproject.toml", "/README.md", "/LICENSE"]
+include = ["/anime_core_lib_portrait_tool", "/examples", "/portrait.py", "/pyproject.toml", "/README.md", "/LICENSE"]
