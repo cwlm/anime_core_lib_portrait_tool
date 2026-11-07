@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local example assets and generated DDS files
+/examples/images/
+/examples/output/

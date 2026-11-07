@@ -1,6 +1,6 @@
 # 透明立绘转 DDS
 
-单图自动／手动处理，以及 CSV 批处理。输出固定为 1024×1024、直通 Alpha、单层 BC3／DXT5 DDS。
+单图自动／手动处理工具，CSV 批处理作为独立示例放在 examples/。输出固定为 1024×1024、直通 Alpha、单层 BC3／DXT5 DDS。
 
 ## 安装
 
@@ -26,24 +26,30 @@ NVTT 或 texconv 自行安装，调用时必须传入名称和可执行文件路
 ```powershell
 portrait auto --input source.png --output result.dds --encoder nvtt --encoder-path 'C:/Tools/nvtt_export.exe' --model-cache ./models
 portrait manual --input source.png --output result.dds --encoder texconv --encoder-path 'C:/Tools/texconv.exe'
-portrait-batch jobs.csv --encoder nvtt --encoder-path 'C:/Tools/nvtt_export.exe' --model-cache ./models
 ```
 
 手动窗口：左键拖动，滚轮缩放，点击保存或 Ctrl+S 导出；取消不写文件。保存失败可以重试。默认禁止覆盖，--overwrite 允许覆盖。
 
 命令行默认离线。--model-cache 指定 Hugging Face 缓存；需要下载模型时自行设置 HF_HUB_OFFLINE=0。
 
-## CSV
+## 批处理示例
+
+全部批处理逻辑位于 examples/batch.py，正式包只提供单图接口。示例内已填写本机项目路径、NVTT 路径和模型缓存路径，按需直接修改。
 
 ```csv
 input,output
-images/a.png,output/a.dds
-images/b.png,output/b.dds
+images/source.png,output/result.dds
 ```
+
+```powershell
+& 'D:/Miniconda3/envs/ck3-resource/python.exe' -X utf8 examples/batch.py
+```
+
+示例图片 examples/images/source.png 来自本机素材，图片目录和输出目录均已加入 .gitignore，不提交到仓库或打入安装包。
 
 路径相对 CSV 所在目录；CSV 使用 UTF-8，可带 BOM。先运行全部自动任务，再依次手动处理没有可靠主脸的图片。自动判定包括无脸、低分、大小相近的多脸和空透明图。文件读取、模型运行或编码异常会打印错误并继续其他任务，不打开手动窗口。
 
-已有输出默认跳过；重跑会重新尝试没有输出的任务。手动取消停止人工队列。单图退出码为 0 已保存、2 需手动或取消、1 错误；批处理为 0 完成、1 有错误或取消、130 键盘中断。
+已有输出默认跳过；重跑会重新尝试没有输出的任务。取消手动窗口会停止人工队列。单图退出码为 0 已保存、2 需手动或取消、1 错误；批处理示例为 0 完成、1 有错误或取消。
 
 ## Python 接口
 

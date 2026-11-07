@@ -20,7 +20,6 @@ gui = ["PySide6-Essentials>=6.12.0"]
 
 [project.scripts]
 portrait = "anime_core_lib_portrait_tool.cli:main"
-portrait-batch = "anime_core_lib_portrait_tool.cli:batch_main"
 
 [project.urls]
 Repository = "https://github.com/cwlm/anime_core_lib_portrait_tool"
@@ -29,4 +28,4 @@ Repository = "https://github.com/cwlm/anime_core_lib_portrait_tool"
 packages = ["anime_core_lib_portrait_tool"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/anime_core_lib_portrait_tool", "/tests", "/examples", "/portrait.py", "/batch.py", "/pyproject.toml", "/README.md", "/LICENSE"]
+include = ["/anime_core_lib_portrait_tool", "/tests", "/examples", "/portrait.py", "/pyproject.toml", "/README.md", "/LICENSE"]

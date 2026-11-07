@@ -12,7 +12,8 @@ from PySide6.QtGui import QWheelEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QDialog
 from anime_core_lib_portrait_tool import Placement, read_image, render, estimate_transform, write_dds
-from anime_core_lib_portrait_tool import auto, manual, batch
+from anime_core_lib_portrait_tool import auto, manual
+from examples import batch
 
 
 class CoreTests(unittest.TestCase):
@@ -89,17 +90,17 @@ class CoreTests(unittest.TestCase):
             events.append("manual")
             output.write_bytes(b"DDS")
             return True
-        with patch.object(batch,"automatic",automatic), patch.object(manual,"prepare",hand):
-            self.assertTrue(batch.run_batch(csv, **self.options))
+        with patch.object(batch,"automatic",automatic), patch.object(manual,"prepare",hand), patch.dict(batch.OPTIONS,self.options):
+            self.assertTrue(batch.run_batch(csv))
             self.assertEqual(events, ["auto","auto","manual","manual"])
-            batch.run_batch(csv, **self.options)
+            batch.run_batch(csv)
             self.assertEqual(len(events), 4)
 
     def test_batch_cancel_stops_remaining_manual_tasks(self):
         csv = self.root / "jobs.csv"
         csv.write_text("input,output\nsource.png,a.dds\nsource.png,b.dds\n", encoding="utf-8")
         with patch.object(batch,"automatic",return_value=False), patch.object(manual,"prepare",return_value=False) as hand:
-            self.assertFalse(batch.run_batch(csv, **self.options))
+            self.assertFalse(batch.run_batch(csv))
         self.assertEqual(hand.call_count, 1)
 
     def test_manual_drag_and_mouse_anchored_zoom(self):
