@@ -1,0 +1,58 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches: [main]
+    paths: [pyproject.toml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Check version change
+        id: version
+        env:
+          BEFORE: ${{ github.event.before }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          python - <<'PY'
+          import os, subprocess, tomllib
+          from pathlib import Path
+
+          current = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+          previous = None
+          before = os.environ.get("BEFORE", "")
+          if before and set(before) != {"0"}:
+              try:
+                  previous = tomllib.loads(subprocess.check_output(
+                      ["git", "show", f"{before}:pyproject.toml"], text=True))["project"]["version"]
+              except subprocess.CalledProcessError:
+                  pass
+          publish = current != previous or os.environ["FORCE"] == "true"
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"publish={str(publish).lower()}\n")
+          print(f"Version: {previous} -> {current}; publish={publish}")
+          PY
+      - name: Build and check distributions
+        if: steps.version.outputs.publish == 'true'
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          python -m twine check dist/*
+      - name: Publish distributions
+        if: steps.version.outputs.publish == 'true'
+        uses: pypa/gh-action-pypi-publish@v1.14.3
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
