@@ -40,6 +40,8 @@ portrait manual --input source.png --output result.dds --encoder texconv --encod
 
 手动窗口：左键拖动、滚轮缩放图片；Ctrl+滚轮缩放视图，中键或右键平移视图。右侧可输入缩放和位置，点击“保存 DDS”或 Ctrl+S 导出，取消不写文件。辅助框不写入输出。
 
+自动构图按脸部参考尺寸取景；如果完整内容取景使脸缩到目标尺度的 75% 以下，会使用包含主脸的人物框重新取景，允许外围舰装或特效超出画布。人物框未检出、不能改善构图或人物模型不可用时，保留完整内容取景。
+
 ## 自定义构图
 
 自动和手动处理都可通过 `--layout layout.json` 加载配置，格式见 [examples/layout.json](examples/layout.json)。
