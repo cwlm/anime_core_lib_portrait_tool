@@ -11,7 +11,7 @@ class Layout:
     anchor: tuple = (512, 175)
     face_size: tuple = (95, 92)
     anchor_x: tuple = (492, 546)
-    anchor_y: tuple = (125, 258)
+    anchor_y: tuple = (145, 205)
     margin: float = 2
 
     def __post_init__(self):
@@ -40,7 +40,7 @@ class CompositionPolicy:
     crop_recovery_limit: float = 0.40
     min_height_occupancy: float = 2/3
     face_scale_range: tuple | None = (0.75, 1.25)
-    position_steps: int = 3
+    position_steps: int = 5
     scale_steps: int = 9
 
     def __post_init__(self):

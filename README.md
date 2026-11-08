@@ -56,6 +56,8 @@ portrait manual --input source.png --output result.dds --encoder texconv --encod
 
 `canvas` 为画布尺寸，`anchor` 为脸部中心，`face_size` 为脸部参考尺寸，`anchor_x`／`anchor_y` 为脸部中心活动范围，`margin` 为内容边距，单位均为输出像素。调整画布时需同步调整脸部位置和范围。
 
+默认纵向范围为 `145～205`，策略中的 `position_steps=5` 表示每个轴均匀采样 5 个位置，因此纵向基础采样点为 `145、160、175、190、205`，间隔 15 像素。搜索还会加入目标位置及按内容边界计算的适配位置；自定义范围后，均匀采样间隔会随范围变化。
+
 自动处理的规则与几何布局分开，通过 `--policy policy.json` 加载，示例见 [examples/policy.json](examples/policy.json)。`alpha_core`、`face_threshold`、三项裁切阈值及最低纵向占比属于 `CompositionPolicy`。`face_scale_range` 为相对于参考脸部尺寸的等比缩放范围，默认 `[0.75, 1.25]`；设为 `null` 时仅以参考尺寸作为优选目标。尺寸比例按脸部框面积的平方根匹配，保持人物纵横比例。自动旋转的 `max_rotation`、`angle_step`、`angle_refinement` 配置已移除。
 
 旧 `content_quantile`、`review_bottom_threshold`、`manual_top_loss_threshold` 已移除；布局 JSON 中的 `alpha_core`／`face_threshold` 需移入策略 JSON。`--policy` 仅适用于自动模式。比例阈值使用严格边界：裁切大于上限或纵向占比小于下限时拒绝，未添加浮点容差。
