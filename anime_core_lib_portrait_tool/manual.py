@@ -11,10 +11,13 @@ from .dds import write_dds
 from .transform import Placement, centered, read_image, render
 
 
+DEFAULT_LAYOUT = Layout(anchor=(494.5,154.5), face_size=(123,113))
+
+
 class PortraitView(QGraphicsView):
     placement_changed = Signal(object)
 
-    def __init__(self, image, *, layout=Layout(), parent=None):
+    def __init__(self, image, *, layout=DEFAULT_LAYOUT, parent=None):
         super().__init__(parent)
         self.config = layout
         self._pan, self._view_changed = None, False
@@ -39,6 +42,18 @@ class PortraitView(QGraphicsView):
             self.outline(QRectF(0,0,*image.size), "#45c9ed", self.item),
             self.outline(QRectF(left,top,right-left,bottom-top), "#b58aee", self.item),
         ]
+        width, height = layout.canvas
+        self.grid_lines = []
+        pen = QPen(QColor(255,255,255,160))
+        pen.setCosmetic(True)
+        pen.setStyle(Qt.PenStyle.DashLine)
+        for division in (1/3, 2/3):
+            for coordinates in ((width*division,0,width*division,height),
+                                (0,height*division,width,height*division)):
+                line = self.scene().addLine(*coordinates,pen)
+                line.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+                line.setZValue(1)
+                self.grid_lines.append(line)
         self.set_placement(centered(image, layout=layout))
 
     def outline(self, rect, color, parent=None):
@@ -117,7 +132,7 @@ class PortraitView(QGraphicsView):
 
 
 class PortraitEditor(QDialog):
-    def __init__(self, image, output, *, encoder, encoder_path, layout=Layout(), overwrite=False):
+    def __init__(self, image, output, *, encoder, encoder_path, layout=DEFAULT_LAYOUT, overwrite=False):
         super().__init__()
         self.image, self.output, self.config = image, output, layout
         self.encoder, self.encoder_path, self.overwrite = encoder, encoder_path, overwrite
@@ -152,7 +167,14 @@ class PortraitEditor(QDialog):
         guides.setChecked(True)
         guides.toggled.connect(lambda visible: [item.setVisible(visible) for item in self.view.guides])
         side.addWidget(guides)
-        side.addWidget(QLabel("白：输出画布\n橙：脸部参考\n青：原图边界\n紫：可见内容边界\n画布外内容会被裁切"))
+        grid = QCheckBox("显示九宫格线")
+        grid.setChecked(True)
+        grid.toggled.connect(lambda visible: [item.setVisible(visible) for item in self.view.grid_lines])
+        side.addWidget(grid)
+        ax, ay = layout.anchor
+        side.addWidget(QLabel(f"白：输出画布／九宫格线\n橙：脸部参考\n"
+                             f"参考中心 ({ax:g}, {ay:g})\n"
+                             "青：原图边界\n紫：可见内容边界\n画布外内容会被裁切"))
         for title, action in (
             ("查看完整画布",self.view.fit_view),
             ("立绘居中",lambda: self.view.set_placement(centered(image,layout=layout))),
@@ -186,7 +208,7 @@ class PortraitEditor(QDialog):
         self.accept()
 
 
-def prepare(input_path, output_path, *, encoder, encoder_path, layout=Layout(), overwrite=False):
+def prepare(input_path, output_path, *, encoder, encoder_path, layout=DEFAULT_LAYOUT, overwrite=False):
     if Path(input_path).resolve() == Path(output_path).resolve():
         raise ValueError("输入和输出不能相同")
     if Path(output_path).exists() and not overwrite:

@@ -29,8 +29,10 @@ def main(argv=None):
     else:
         from .manual import prepare
     try:
-        saved = prepare(args.input, args.output, encoder=args.encoder,
-                        encoder_path=args.encoder_path, layout=load_layout(args.layout), overwrite=args.overwrite)
+        options = dict(encoder=args.encoder,encoder_path=args.encoder_path,overwrite=args.overwrite)
+        if args.layout:
+            options["layout"] = load_layout(args.layout)
+        saved = prepare(args.input,args.output,**options)
         print("已保存" if saved else "需手动处理或已取消")
         return 0 if saved else 2
     except Exception as exc:

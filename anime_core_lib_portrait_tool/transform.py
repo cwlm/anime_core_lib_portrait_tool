@@ -52,26 +52,37 @@ def detect_person(image):
 
 
 def _fit(box, bounds, layout):
+    """Keep all content when possible; stop shrinking at 75% of the face scale."""
     x0, y0, x1, y1 = box
     cx, cy = (x0+x1)/2, (y0+y1)/2
     left, top, right, bottom = bounds
     xr, yr = layout.anchor_x, layout.anchor_y
     width, height = layout.canvas
     margin = layout.margin
-    limits = [math.sqrt(math.prod(layout.face_size)/((x1-x0)*(y1-y0))),
+    desired = math.sqrt(math.prod(layout.face_size)/((x1-x0)*(y1-y0)))
+    limits = [desired,
               (width-2*margin)/(right-left),(height-2*margin)/(bottom-top)]
     for distance, room in ((cx-left,xr[1]-margin),(right-cx,width-margin-xr[0]),
                            (cy-top,yr[1]-margin),(bottom-cy,height-margin-yr[0])):
         if distance > 0:
             limits.append(room/distance)
-    scale = min(limits)
-    ax = min(max(layout.anchor[0],xr[0],margin+(cx-left)*scale),xr[1],width-margin-(right-cx)*scale)
-    ay = min(max(layout.anchor[1],yr[0],margin+(cy-top)*scale),yr[1],height-margin-(bottom-cy)*scale)
+    scale = max(min(limits),desired*0.75)
+
+    def position(center, low, high, size, preferred, allowed):
+        # These endpoints describe translations that retain the most content.
+        # If the content is larger than the canvas, their order is reversed.
+        near, far = sorted((margin+(center-low)*scale,size-margin-(high-center)*scale))
+        lo = min(max(near,allowed[0]),allowed[1])
+        hi = min(max(far,allowed[0]),allowed[1])
+        return min(max(preferred,lo),hi)
+
+    ax = position(cx,left,right,width,layout.anchor[0],xr)
+    ay = position(cy,top,bottom,height,layout.anchor[1],yr)
     return Placement(scale,ax-cx*scale,ay-cy*scale)
 
 
 def estimate_transform(image, *, layout=Layout()):
-    """Fit the main face; use person framing when artwork would make it too small."""
+    """Shrink to preserve content, then translate and clip at the face-size floor."""
     bounds = image.getchannel("A").point(lambda a: 255 if a >= layout.alpha_core else 0).getbbox()
     if bounds is None:
         return None
@@ -87,20 +98,4 @@ def estimate_transform(image, *, layout=Layout()):
             if candidates else max(faces,key=lambda f: f[2]))
     if face[2] < layout.face_threshold or any(f is not face and f[2] >= 0.6 and area(f) >= area(face)*0.5 for f in faces):
         return None
-    placement = _fit(face[0],bounds,layout)
-    desired = math.sqrt(math.prod(layout.face_size)/area(face))
-    if placement.scale < desired*0.75:
-        try:
-            x0, y0, x1, y1 = face[0]
-            cx, cy = (x0+x1)/2,(y0+y1)/2
-            persons = [p for p in detect_person(rgb) if p[2] >= 0.5
-                       and p[0][0] <= cx <= p[0][2] and p[0][1] <= cy <= p[0][3]]
-            if persons:
-                box = max(persons,key=lambda p: p[2])[0]
-                candidate = _fit(face[0],(min(box[0],x0),min(box[1],y0),
-                                           max(box[2],x1),max(box[3],y1)),layout)
-                if candidate.scale > placement.scale:
-                    placement = candidate
-        except Exception as exc:
-            print(f"人物辅助检测失败，保留完整取景：{exc}")
-    return placement
+    return _fit(face[0],bounds,layout)
