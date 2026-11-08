@@ -222,3 +222,5 @@ __marimo__/
 # Local example assets and generated DDS files
 /examples/images/
 /examples/output/
+
+ai_tests/

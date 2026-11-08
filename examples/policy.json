@@ -1,0 +1,10 @@
+{
+  "alpha_core": 16,
+  "face_threshold": 0.55,
+  "crop_limit": 0.2,
+  "crop_recovery_limit": 0.4,
+  "min_height_occupancy": 0.6666666666666666,
+  "face_scale_range": [0.75, 1.25],
+  "position_steps": 3,
+  "scale_steps": 9
+}

@@ -1,4 +1,7 @@
 """Portrait composition and DDS encoding."""
-from .transform import Placement, read_image, render, estimate_transform
+from .transform import AffineTransform, centered, read_image, render
+from .composition import (CompositionMetrics, CompositionResult, CompositionStatus,
+                          ReasonCode, analyze_transform, estimate_transform)
+from .detection import FaceDetection
 from .dds import write_dds
-from .config import Layout, load_layout
+from .config import CompositionPolicy, Layout, load_layout, load_policy

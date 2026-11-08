@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QDialog, QDoubleSpinBox,
     QGraphicsView, QHBoxLayout, QLabel, QMessageBox, QPushButton, QVBoxLayout)
 from .config import Layout
 from .dds import write_dds
-from .transform import Placement, centered, read_image, render
+from .transform import AffineTransform, centered, read_image, render
 
 
 DEFAULT_LAYOUT = Layout(anchor=(494.5,154.5), face_size=(123,113))
@@ -90,8 +90,10 @@ class PortraitView(QGraphicsView):
         else:
             p = self.placement()
             scale = max(0.00001,min(10000,p.scale*factor))
-            self.set_placement(Placement(scale,point.x()+(p.x-point.x())*scale/p.scale,
-                                         point.y()+(p.y-point.y())*scale/p.scale))
+            factor = scale/p.scale
+            zoom = AffineTransform.similarity(
+                scale=factor, x=point.x()*(1-factor), y=point.y()*(1-factor))
+            self.set_placement(zoom.compose(p))
         event.accept()
 
     def mousePressEvent(self, event):
@@ -124,11 +126,14 @@ class PortraitView(QGraphicsView):
 
     def set_placement(self, placement):
         self.item.setScale(placement.scale)
-        self.item.setPos(placement.x,placement.y)
+        self.item.setRotation(placement.angle)
+        self.item.setPos(placement.c,placement.f)
         self.placement_changed.emit(placement)
 
     def placement(self):
-        return Placement(self.item.scale(),self.item.x(),self.item.y())
+        return AffineTransform.similarity(
+            scale=self.item.scale(), angle=self.item.rotation(),
+            x=self.item.x(), y=self.item.y())
 
 
 class PortraitEditor(QDialog):
@@ -150,11 +155,13 @@ class PortraitEditor(QDialog):
                              "左键拖动／滚轮缩放图片\nCtrl+滚轮缩放查看\n中键／右键移动视图"))
         form = QFormLayout()
         side.addLayout(form)
-        self.scale_box, self.x_box, self.y_box = QDoubleSpinBox(),QDoubleSpinBox(),QDoubleSpinBox()
+        self.scale_box, self.angle_box = QDoubleSpinBox(),QDoubleSpinBox()
+        self.x_box, self.y_box = QDoubleSpinBox(),QDoubleSpinBox()
         for title, field, limits, suffix in (
             ("缩放",self.scale_box,(0.001,1000000)," %"),
-            ("左上角 X",self.x_box,(-10000000,10000000)," px"),
-            ("左上角 Y",self.y_box,(-10000000,10000000)," px")):
+            ("顺时针旋转",self.angle_box,(-180,180)," °"),
+            ("原图原点 X",self.x_box,(-10000000,10000000)," px"),
+            ("原图原点 Y",self.y_box,(-10000000,10000000)," px")):
             field.setRange(*limits)
             field.setDecimals(3)
             field.setSuffix(suffix)
@@ -189,13 +196,16 @@ class PortraitEditor(QDialog):
 
     def sync_controls(self, placement):
         for field, value in ((self.scale_box,placement.scale*100),
-                             (self.x_box,placement.x),(self.y_box,placement.y)):
+                             (self.angle_box,placement.angle),
+                             (self.x_box,placement.c),(self.y_box,placement.f)):
             field.blockSignals(True)
             field.setValue(value)
             field.blockSignals(False)
 
     def edit_transform(self):
-        self.view.set_placement(Placement(self.scale_box.value()/100,self.x_box.value(),self.y_box.value()))
+        self.view.set_placement(AffineTransform.similarity(
+            scale=self.scale_box.value()/100, angle=self.angle_box.value(),
+            x=self.x_box.value(), y=self.y_box.value()))
 
     def save(self):
         try:
