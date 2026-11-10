@@ -42,12 +42,15 @@ class CompositionPolicy:
     face_scale_range: tuple | None = (0.75, 1.25)
     position_steps: int = 5
     scale_steps: int = 9
+    person_face_overlap: float = 0.9
 
     def __post_init__(self):
         if not isinstance(self.alpha_core, int) or not 1 <= self.alpha_core <= 255:
             raise ValueError("Alpha 阈值必须为 [1,255] 内的整数")
         if not 0 <= self.face_threshold <= 1:
             raise ValueError("脸部置信度阈值须在 [0,1]")
+        if not 0 < self.person_face_overlap <= 1:
+            raise ValueError("人物框对主脸的覆盖比例须在 (0,1]")
         if not 0 <= self.crop_limit < 1 or not self.crop_limit <= self.crop_recovery_limit <= 1:
             raise ValueError("裁切阈值须满足 0 ≤ 常规阈值 < 1，且常规阈值 ≤ 补救阈值 ≤ 1")
         if not 0 < self.min_height_occupancy <= 1:

@@ -8,6 +8,12 @@ class FaceDetection:
     confidence: float
 
 
+@dataclass(frozen=True)
+class PersonDetection:
+    box: tuple[float, float, float, float]
+    confidence: float
+
+
 def _detect(image, name, model, confidence, iou):
     # Import the runtime first so imgutils cannot silently install it.
     import onnxruntime as ort
@@ -25,4 +31,6 @@ def detect_faces(image):
 
 
 def detect_person(image):
-    return _detect(image, "detect_person", "person_detect_v1.3_s", 0.3, 0.5)
+    return tuple(PersonDetection(tuple(float(v) for v in box), float(confidence))
+                 for box, _, confidence in _detect(
+                     image, "detect_person", "person_detect_v1.3_s", 0.3, 0.5))

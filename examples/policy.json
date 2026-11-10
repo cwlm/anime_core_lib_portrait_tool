@@ -1,6 +1,7 @@
 {
   "alpha_core": 16,
   "face_threshold": 0.55,
+  "person_face_overlap": 0.9,
   "crop_limit": 0.2,
   "crop_recovery_limit": 0.4,
   "min_height_occupancy": 0.6666666666666666,
